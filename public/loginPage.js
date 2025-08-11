@@ -3,7 +3,6 @@
 const userForm = new UserForm();
 
 userForm.loginFormCallback = (data) => {
-  setTimeout(() => {
     ApiConnector.login(data, (response) => {
       if (response.success) {
         location.reload();
@@ -11,11 +10,9 @@ userForm.loginFormCallback = (data) => {
         userForm.setLoginErrorMessage(response.error);
       }
     });
-  }, 0);
 };
 
 userForm.registerFormCallback = (data) => {
-  setTimeout(() => {
     ApiConnector.register(data, (response) => {
       if (response.success) {
         location.reload();
@@ -23,5 +20,4 @@ userForm.registerFormCallback = (data) => {
         userForm.setRegisterErrorMessage(response.error);
       }
     });
-  }, 0);
 };
