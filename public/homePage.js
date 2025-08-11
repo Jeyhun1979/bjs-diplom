@@ -1,180 +1,105 @@
 "use strict";
 
-class LogoutButton {
-    constructor() {
-        this.logoutBtn = null;
-        this.action = this.logoutClick.bind(this);
+const logoutButton = new LogoutButton();
+logoutButton.action = () => {
+  ApiConnector.logout((response) => {
+    if (response.success) {
+      location.reload();
     }
-
-    logoutClick() {
-        setTimeout(() => {
-            ApiConnector.logout(response => {
-                if(response.success) {
-                    location.reload();
-                }
-            })
-        }, 0);
-    }
-}
-
-class ProfileWidget {
-    showProfile(data) {
-        console.log(data);
-    }
-}
-
-setTimeout(() => {
-    ApiConnector.current(response => {
-        if(response.success) {
-            ProfileWidget.showProfile(response);
-        }
-    })
-}, 0);
-
-class RatesBoard {
-   constructor() {
-    this.tableBody = null;
-   }
-
-   fillTable(data) {
-    this.tableBody = data;
-   }
-
-   clearTable() {
-    this.tableBody = [];
-   }
-}
-
-function getRates() {
-    setTimeout(() => {
-        ApiConnector.getStocks(response => {
-            if(response.success) {
-                RatesBoard.clearTable();
-                RatesBoard.fillTable(response.data);
-            }
-        })
-    }, 0);
+  });
 };
 
-   getRates();
-   setInterval(getRates, 60000);
+ApiConnector.current((response) => {
+  if (response.success) {
+    ProfileWidget.showProfile(response.data);
+  }
+});
 
+const ratesBoard = new RatesBoard();
 
-
-   class MoneyManager {
-    constructor() {
-        this.addMoneyForm = null;
-        this.conversionMoneyForm = null;
-        this.sendMoneyForm = null;
-        this.errorMessageBlock = null;
-        this.addMoneyCallback = this.addMoneyAction.bind(this);
-        this.conversionMoneyCallback = this.conversionMoneyAction.bind(this);
-        this.sendMoneyCallback = this.sendMoneyAction.bind(this);
+function getRates() {
+  ApiConnector.getStocks((response) => {
+    if (response.success) {
+      ratesBoard.clearTable();
+      ratesBoard.fillTable(response.data);
     }
+  });
+}
 
-    addMoneyAction(data) {
-        setTimeout(() => {
-            ApiConnector.addMoney(data, response => {
-                if(response.success) {
-                    ProfileWidget.showProfile(response.data);
-                    this.setMessage("Перевод выполнен успешно!");
-                }
-                this.setMessage(response.error);
-            })
-        }, 0);
+getRates();
+setInterval(getRates, 60000);
+
+const moneyManager = new MoneyManager();
+
+moneyManager.addMoneyCallback = (data) => {
+  ApiConnector.addMoney(data, (response) => {
+    if (response.success) {
+      ProfileWidget.showProfile(response.data);
+      moneyManager.setMessage(true, 'Баланс успешно пополнен');
+    } else {
+      moneyManager.setMessage(false, response.error);
     }
+  });
+};
 
-    conversionMoneyAction(data) {
-        setTimeout(() => {
-            ApiConnector.convertMoney(data, response => {
-                if(response.success) {
-                    ProfileWidget.showProfile(response.data);
-                    this.setMessage("Конвертация прошла успешна!");
-                }
-                this.setMessage(response.error);
-            })
-        }, 0);
+moneyManager.conversionMoneyCallback = (data) => {
+  ApiConnector.convertMoney(data, (response) => {
+    if (response.success) {
+      ProfileWidget.showProfile(response.data);
+      moneyManager.setMessage(true, 'Конвертация выполнена успешно');
+    } else {
+      moneyManager.setMessage(false, response.error);
     }
+  });
+};
 
-    sendMoneyAction(data) {
-        setTimeout(() => {
-            ApiConnector.transferMoney(data, response => {
-                if(response.success) {
-                    ProfileWidget.showProfile(response.data);
-                }
-                this.setMessage(response.success, response.success ? "Перевод выполнен успешно!" : response.error);
-            })
-        }, 0);
+moneyManager.sendMoneyCallback = (data) => {
+  ApiConnector.transferMoney(data, (response) => {
+    if (response.success) {
+      ProfileWidget.showProfile(response.data);
+      moneyManager.setMessage(true, 'Перевод выполнен успешно');
+    } else {
+      moneyManager.setMessage(false, response.error);
     }
+  });
+};
 
-    setMessage(isSuccess,message) {
-        console.log(isSuccess ? "SUCCESS:" : "ERROR:", message);
-        this.errorMessageBlock = {isSuccess, message};
+const favoritesWidget = new FavoritesWidget();
+
+function getFavorites() {
+  ApiConnector.getFavorites((response) => {
+    if (response.success) {
+      favoritesWidget.clearTable();
+      favoritesWidget.fillTable(response.data);
+      moneyManager.updateUsersList(response.data);
     }
+  });
+}
 
-    updateUsersList(data) {
-        this.usersList = data;
+getFavorites();
+
+favoritesWidget.addUserCallback = (data) => {
+  ApiConnector.addUserToFavorites(data, (response) => {
+    if (response.success) {
+      favoritesWidget.clearTable();
+      favoritesWidget.fillTable(response.data);
+      moneyManager.updateUsersList(response.data);
+      favoritesWidget.setMessage(true, 'Пользователь добавлен в избранное');
+    } else {
+      favoritesWidget.setMessage(false, response.error);
     }
-   }
+  });
+};
 
-   class FavoritesWidget {
-    constructor() {
-        this.favoritesTableBody = setTimeout(() => {
-            ApiConnector.getFavorites(data, response => {
-                if(response.success) {
-                    this.clearTable();
-                    this.fillTable(response.data);
-                    MoneyManager.updateUsersList(response.data);
-                }
-            })
-        }, 0);
-        this.addUserToFavoritesForm = null;
-        this.favoritesMessageBox = null;
-        this.addUserCallback = this.addUserAction.bind(this);
-        this.removeUserCallback = this.removeUserAction.bind(this);
+favoritesWidget.removeUserCallback = (id) => {
+  ApiConnector.removeUserFromFavorites(id, (response) => {
+    if (response.success) {
+      favoritesWidget.clearTable();
+      favoritesWidget.fillTable(response.data);
+      moneyManager.updateUsersList(response.data);
+      favoritesWidget.setMessage(true, 'Пользователь удален из избранного');
+    } else {
+      favoritesWidget.setMessage(false, response.error);
     }
-
-    addUserAction(data) {
-        setTimeout(() => {
-            ApiConnector.addUserToFavorites(data, (response) => {
-                if (response.success) {
-                    this.clearTable();
-                    this.fillTable(response.data);
-                    MoneyManager.updateUsersList(response.data);
-                }
-                this.setMessage(response.success, response.success ? "Пользователь добавлен!" : response.error);
-            });
-        }, 0);
-    }
-
-    removeUserAction(id) {
-        setTimeout(() => {
-            ApiConnector.removeUserFromFavorites(id, (response) => {
-                if (response.success) {
-                    this.clearTable();
-                    this.fillTable(response.data);
-                    MoneyManager.updateUsersList(response.data);
-                }
-                this.setMessage(response.success, response.success ? "Пользователь удалён!" : response.error);
-            });
-        }, 0);
-    }
-
-    fillTable(data) {
-        this.favoritesTableBody = data; 
-    }
-
-    clearTable() {
-        this.favoritesTableBody = [];
-    }
-
-    setMessage(isSuccess, message) {
-        console.log(isSuccess ? "SUCCESS:" : "ERROR:", message);
-        this.favoritesMessageBox = { isSuccess, message };
-    }
-
-    getData(data) {
-        this.addUserToFavoritesForm = data;
-    }
-
-   }
+  });
+};
